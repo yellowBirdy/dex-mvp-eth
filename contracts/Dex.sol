@@ -6,9 +6,9 @@ pragma experimental ABIEncoderV2;
 //import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/solc-0.6/contracts/access/Ownable.sol";
 //import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/solc-0.6/contracts/math/SafeMath.sol";
 //import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/solc-0.6/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/Ownable.sol";
-import "@openzeppelin/contracts/SafeMath.sol";
-import "@openzeppelin/contracts/IERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract Dex is Ownable {
     using SafeMath for uint;
