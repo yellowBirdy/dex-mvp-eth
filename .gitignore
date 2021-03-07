@@ -1,4 +1,10 @@
-# Logs
+/build
+
+## Vim
+*.swp
+*.swr
+
+## Logs
 logs
 *.log
 npm-debug.log*
