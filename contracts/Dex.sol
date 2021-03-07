@@ -3,9 +3,6 @@
 pragma solidity ^0.6.0;
 pragma experimental ABIEncoderV2;
 
-//import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/solc-0.6/contracts/access/Ownable.sol";
-//import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/solc-0.6/contracts/math/SafeMath.sol";
-//import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/solc-0.6/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -55,7 +52,7 @@ contract Dex is Ownable {
     mapping (bytes32 => Token) tokens;
     bytes32[] tokenNames;
                         // ticker => balance        
-    mapping (address=>mapping(bytes32=>uint)) traderBalances;
+    mapping (address=>mapping(bytes32=>uint)) public traderBalances;
             //ticker =>    Side =>
     mapping (bytes32 => mapping(uint => Order[])) limitOrders;
     uint nextOrderId = 0;
