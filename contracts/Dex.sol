@@ -54,14 +54,14 @@ contract Dex is Ownable {
                         // ticker => balance        
     mapping (address=>mapping(bytes32=>uint)) public traderBalances;
             //ticker =>    Side =>
-    mapping (bytes32 => mapping(uint => Order[])) limitOrders;
+    mapping (bytes32 => mapping(uint => Order[])) public limitOrders;
     uint nextOrderId = 0;
     uint nextTradeId = 0;
 
     
     bytes32 DAI = bytes32("DAI");
     
-    function createMarketOrder (Side side, bytes32 ticker, uint amount) external tokenExists(ticker) notDai(ticker) {
+    function createMarketOrder (bytes32 ticker, Side side , uint amount) external tokenExists(ticker) notDai(ticker) {
         if (side == Side.SELL) {
             require(amount <= traderBalances[msg.sender][ticker], "Dex: Not enough balance");
         }
@@ -108,7 +108,14 @@ contract Dex is Ownable {
             i++;
         }
         //@dev prunning filled orders
-
+        while(orders.length > 0 && orders[0].amount == orders[0].filled) {
+            //push to start
+            for (i = 1; i < orders.length; i++) {
+                orders[i-1] = orders[i];
+            }
+            //pop last
+            orders.pop();
+        }
 
     }
     

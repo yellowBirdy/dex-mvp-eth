@@ -6,11 +6,16 @@ const Bat = artifacts.require("mocks/Bat.sol");
 const Snx = artifacts.require("mocks/Snx.sol");
 const Uni = artifacts.require("mocks/Uni.sol");
 
-const tickers = {
+const Ticker = {
     DAI: web3.utils.fromAscii("DAI"),
     BAT: web3.utils.fromAscii("BAT"),
     SNX: web3.utils.fromAscii("SNX"),
     UNI: web3.utils.fromAscii("UNI"),
+}
+
+const Side = {
+    BUY: 0,
+    SELL: 1
 }
 
 contract("Dex", (accounts) => {
@@ -18,6 +23,7 @@ contract("Dex", (accounts) => {
     let dex, dai, bat, snx, uni
     const initAmount = web3.utils.toWei("10000")
     const amount = web3.utils.toWei("100")
+    const biggerAmount = web3.utils.toWei("1000")
     beforeEach(async () => {
         [dai, bat, snx, uni] = await Promise.all([
             Dai.new(),
@@ -34,22 +40,22 @@ contract("Dex", (accounts) => {
         }
         
         await Promise.all([
-            dex.addToken(tickers.DAI, dai.address),
-            dex.addToken(tickers.BAT, bat.address),
-            dex.addToken(tickers.SNX, snx.address),
-            dex.addToken(tickers.UNI, uni.address)
+            dex.addToken(Ticker.DAI, dai.address),
+            dex.addToken(Ticker.BAT, bat.address),
+            dex.addToken(Ticker.SNX, snx.address),
+            dex.addToken(Ticker.UNI, uni.address)
         ])
     
 
-        fundAccount(trader1)
-        fundAccount(trader2)
+        await fundAccount(trader1)
+        await fundAccount(trader2)
     })
     describe("Deposit", ()=>{
         it("Deposits registered token", async ()=> {
             await dai.approve(dex.address, amount, {from: trader1})
-            await dex.deposit(tickers.DAI, amount, {from: trader1})
+            await dex.deposit(Ticker.DAI, amount, {from: trader1})
 
-            assert((await dex.traderBalances(trader1, tickers.DAI)).toString() === amount)
+            assert((await dex.traderBalances(trader1, Ticker.DAI)).toString() === amount)
         })
         it("Does NOT deposit unregisterd token", async ()=> {
             await dai.approve(dex.address, amount, {from:trader1})
@@ -62,10 +68,10 @@ contract("Dex", (accounts) => {
     describe("Withdraw", ()=>{
         it("Withdraws registered token", async () => {
             await dai.approve(dex.address, amount, {from: trader1})
-            await dex.deposit(tickers.DAI, amount, {from: trader1})
+            await dex.deposit(Ticker.DAI, amount, {from: trader1})
 
-            await dex.withdraw(tickers.DAI, amount, {from: trader1})
-            const dexBalance = await dex.traderBalances(trader1, tickers.DAI)
+            await dex.withdraw(Ticker.DAI, amount, {from: trader1})
+            const dexBalance = await dex.traderBalances(trader1, Ticker.DAI)
             const walletBalance = await dai.balanceOf(trader1)
 
             assert(dexBalance.toNumber() === 0 )
@@ -81,10 +87,10 @@ contract("Dex", (accounts) => {
         })
         it("Does NOT withdraw more then traders balance", async () => {
             await dai.approve(dex.address, amount, {from: trader1})
-            await dex.deposit(tickers.DAI, amount, {from: trader1})
+            await dex.deposit(Ticker.DAI, amount, {from: trader1})
 
             expectRevert(
-                dex.withdraw(tickers.DAI, web3.utils.toWei("10000"), {from: trader1}),
+                dex.withdraw(Ticker.DAI, web3.utils.toWei("10000"), {from: trader1}),
                 "Dex: Can't withdraw more then one owns"
             )
         })
@@ -92,16 +98,170 @@ contract("Dex", (accounts) => {
     describe("Limit", ()=>{
         it("Creates buy order", async () => {
             await dai.approve(dex.address, amount , {from: trader1})
-            await dex.deposit(tickers.DAI, amount, {from: trader})
+            await dex.deposit(Ticker.DAI, amount, {from: trader1})
+            
+            const buyAmount = web3.utils.toWei("10")
+            const price = "1"
+            await dex.createLimitOrder(Ticker.BAT, Side.BUY, buyAmount, price,   {from: trader1})
+            
+            const orders = await dex.getOrders(Ticker.BAT, Side.BUY )
+            
+            assert(orders.length === 1)
+            assert(orders[0].amount === buyAmount)
+            assert(orders[0].price  === price)
+            assert(orders[0].side  === Side.BUY)
+            assert(orders[0].filled === "0")
+            assert(orders[0].trader === trader1)
 
         })
-        xit("Creates sell order", async () => {})
+        it("Creates sell order", async () => {
+            await bat.approve(dex.address, amount , {from: trader1})
+            await dex.deposit(Ticker.BAT, amount, {from: trader1})
+            
+            const sellAmount = web3.utils.toWei("10")
+            const price = "10"
+            await dex.createLimitOrder(Ticker.BAT, Side.SELL, sellAmount, price,   {from: trader1})
+            
+            const orders = await dex.getOrders(Ticker.BAT, Side.SELL )
+            
+            assert(orders.length === 1)
+            assert(orders[0].amount === sellAmount)
+            assert(orders[0].price  === price)
+            assert(orders[0].side  === Side.SELL)
+            assert(orders[0].filled === "0")
+            assert(orders[0].trader === trader1)
 
-        xit("Does NOT create order for not registerred token", async () => {})
-        xit("Does NOT create order for DAI", async () => {})
-        xit("Does NOT create sell order for more then available balance", async () => {})
-        xit("Does NOT create buy order for more the available DAI balance", async () => {})
+        })
+
+
+        it("Does NOT create order for not registerred token", async () => {
+            expectRevert(
+                dex.createLimitOrder(web3.utils.fromAscii("Does not exist"), Side.SELL, amount, "10", {from: trader1}),
+                    "Dex: Token has to be registered"
+            )         
+        })
+        it("Does NOT create order for DAI", async () => {
+            expectRevert(
+                dex.createLimitOrder(Ticker.DAI, Side.SELL, amount, "10", {from: trader1}),
+                "Dex: Can't crate order for DAI"
+            )         
+            
+        })
+        it("Does NOT create sell order for more then available balance", async () => {
+            await bat.approve(dex.address, amount , {from: trader1})
+            await dex.deposit(Ticker.BAT, amount, {from: trader1})
+            
+            const sellAmount = web3.utils.toWei("101")
+            const price = "10"
+            expectRevert(
+                dex.createLimitOrder(Ticker.BAT, Side.SELL, sellAmount, price,   {from: trader1}),
+                "Dex: not enough balance"
+            )
+        })
+        it("Does NOT create buy order for more the available DAI balance", async () => {
+            await dai.approve(dex.address, amount , {from: trader1})
+            await dex.deposit(Ticker.DAI, amount, {from: trader1})
+            
+            const buyAmount = web3.utils.toWei("101")
+            const price = "10"
+            expectRevert(
+                dex.createLimitOrder(Ticker.BAT, Side.BUY, buyAmount, price,   {from: trader1}),
+                "Dex: not enough DAI balance"
+            )
+        })
     })
     describe("Market", ()=>{
+        it("Creates a buy order", async () => {
+            const biggerAmount = web3.utils.toWei("1000");
+            await bat.approve(dex.address, biggerAmount , {from: trader2})
+            await dex.deposit(Ticker.BAT, biggerAmount, {from: trader2})
+           
+            await dex.createLimitOrder(Ticker.BAT, Side.SELL, biggerAmount, 10, {from: trader2}) 
+
+            await dai.approve(dex.address, amount , {from: trader1})
+            await dex.deposit(Ticker.DAI, amount, {from: trader1})
+            
+            const buyAmount = web3.utils.toWei("10")
+            await dex.createMarketOrder(Ticker.BAT, Side.BUY, buyAmount, {from: trader1})
+            
+            const orders = await dex.getOrders(Ticker.BAT, Side.SELL )
+            const buyerBalances = {
+                DAI: await dex.traderBalances(trader1, Ticker.DAI),
+                BAT: await dex.traderBalances(trader1, Ticker.BAT)
+            }
+            const sellerBalances = {
+                DAI: await dex.traderBalances(trader2, Ticker.DAI),
+                BAT: await dex.traderBalances(trader2, Ticker.BAT)
+            }
+            
+            assert(orders.length === 1)
+            assert(orders[0].filled === String(buyAmount))
+            assert(buyerBalances.DAI.toString() === "0")
+            assert(buyerBalances.BAT.toString() === web3.utils.toWei("10"))
+            assert(sellerBalances.DAI.toString() === buyAmount + "0")
+        })
+        it("Creates a sell order", async () => {
+            const biggerAmount = web3.utils.toWei("1000");
+            await dai.approve(dex.address, biggerAmount , {from: trader2})
+            await dex.deposit(Ticker.DAI, biggerAmount, {from: trader2})
+           
+            await dex.createLimitOrder(Ticker.BAT, Side.BUY, amount, 1, {from: trader2}) 
+
+            await bat.approve(dex.address, amount , {from: trader1})
+            await dex.deposit(Ticker.BAT, amount, {from: trader1})
+            
+            const sellAmount = amount
+            await dex.createMarketOrder(Ticker.BAT, Side.SELL, sellAmount, {from: trader1})
+            
+            const orders = await dex.getOrders(Ticker.BAT, Side.BUY )
+            const sellerBalances = {
+                DAI: await dex.traderBalances(trader1, Ticker.DAI),
+                BAT: await dex.traderBalances(trader1, Ticker.BAT)
+            }
+            const buyerBalances = {
+                DAI: await dex.traderBalances(trader2, Ticker.DAI),
+                BAT: await dex.traderBalances(trader2, Ticker.BAT)
+            }
+            assert(orders.length === 0)
+            assert(buyerBalances.BAT.toString() === sellAmount)
+            assert(buyerBalances.DAI.toString() === web3.utils.toWei("900"))
+            assert(sellerBalances.DAI.toString() === sellAmount)
+            assert(sellerBalances.BAT.toString() === "0"  )
+
+        })
+
+        it("Does NOT crate an order for non registered token", async () => {
+            expectRevert(
+                dex.createMarketOrder(web3.utils.fromAscii("No Token"), Side.BUY, amount),
+                "Dex: Token has to be registered"
+            )  
+        })
+        it("Does NOT crate an order for DAI", async () => {
+            expectRevert(
+                dex.createMarketOrder(Ticker.DAI, Side.BUY, amount),
+                "Dex: Can't crate order for DAI"
+            )  
+        })
+        it("Does NOT crate sell order for more than available balance", async () => {
+            uni.approve(dex.address, amount, {from: trader1})
+            dex.deposit(Ticker.UNI, amount, {from: trader1})
+            
+            expectRevert(
+                dex.createMarketOrder(Ticker.UNI, Side.SELL, biggerAmount, {from: trader1}),
+                "Dex: Not enough balance"
+            )
+        })
+        it("Does NOT crate buy order if not enough DAI", async () => {
+            await snx.approve(dex.address, amount, {from: trader2})
+            await dex.deposit(Ticker.SNX, web3.utils.toWei("10"), {from: trader2})
+            await dex.createLimitOrder(Ticker.SNX, Side.SELL, web3.utils.toWei("10"), "10", {from: trader2})
+            
+            expectRevert(
+                dex.createMarketOrder(Ticker.SNX, Side.BUY, biggerAmount),
+                "Dex: Not enough DAI to buy"
+            )
+        })
+
+
     })
 })
