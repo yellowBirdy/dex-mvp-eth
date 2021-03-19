@@ -14,8 +14,8 @@ const Ticker = {
 }
 
 const Side = {
-    BUY: 0,
-    SELL: 1
+    BUY: "0",
+    SELL: "1"
 }
 
 contract("Dex", (accounts) => {
