@@ -1,9 +1,7 @@
 import Web3 from "web3"
-import Dai from "./contracts/Dai"
-import Bat from "./contracts/Bat"
-import Snx from "./contracts/Snx"
-import Uni from "./contracts/Uni"
+import ERC20Abi from "./ERC20Abi.json"
 import Dex from "./contracts/Dex"
+
 
 
 export const getWeb3 = () => {
@@ -34,15 +32,23 @@ export const getWeb3 = () => {
     })
 }
 
-export const getContracts = ({web3}) => {
-    // {coins: Contract[], dex: Contract}
-    // populate with getContract
-    // return
-}
+export const getContracts = async ({web3}) => {
+    let dexContract,
+        coinContracts = {}
+    // populate 
+    const netId = await web3.eth.net.getId()
+    try {
+        const address = Dex.networks[netId].address
+        dexContract = new web3.eth.Contract(Dex.abi, address)
+    } catch (e) {
+        throw "DEX contract not found deployed on the network"        
+    }
+    const tokens = await dexContract.methods.getTokens()
+        .call()
+    tokens.forEach(({ticker, tokenAddress}) => {
+        coinContracts[web3.utils.hexToUtf8(ticker)] =
+            new web3.eth.Contract(ERC20Abi, tokenAddress)
+    })
 
-function getContract ({web3, artifact}) {
-    // const netId = wetb3.eth.networkId
-    // const address = Artifact.deployed[networkId].address
-    // const contract instance = web3.eth.Contract(Abi, address)
-    // return 
+    return {dexContract, coinContracts}
 }
