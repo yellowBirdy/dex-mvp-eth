@@ -1,5 +1,4 @@
 import React, {useState, useEffect} from "react"
-//import {getWeb3, getContracts} from "./utils"
 import {getWeb3, getContracts} from "./blockchain"
 
 
@@ -12,19 +11,33 @@ function App() {
     const [coins, setCoins] = useState({})
 
     useEffect(() => {
-        async function init () {
-            setIsLoading(true)
-            const web3 = await getWeb3()
-            const {dexContract, coinContracts} = await getContracts({web3})
-            setWeb3(web3)
-            setDex(dexContract)
-            setCoins(coinContracts)
-            setIsLoading(false)
-        }
+        //   async function init () {
+        //       setIsLoading(true)
+        //       const web3 = await getWeb3()
+        //       const {dexContract, coinContracts} = await getContracts({web3})
+        //       setWeb3(web3)
+        //       setDex(dexContract)
+        //       setCoins(coinContracts)
+        //       setIsLoading(false)
+        //   }
 
-        init()
+        //   init()
     }, [])
-    return isLoading ? <h1>Connect you wallet!!!</h1> : (
+
+    async function connect () {
+        setIsLoading(true)
+        const web3 = await getWeb3()
+        const {dexContract, coinContracts} = await getContracts({web3})
+        setWeb3(web3)
+        setDex(dexContract)
+        setCoins(coinContracts)
+        setIsLoading(false)
+        setIsConnected(true)
+    }
+    
+
+    return isLoading ? <h1>Connecting to the blockchain</h1> :
+           !isConnected ? <h1 onClick={connect}> Click to connect your wallet Ser</h1> : (
         <div className="App">
          DEX
         </div>
