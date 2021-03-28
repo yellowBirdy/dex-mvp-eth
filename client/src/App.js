@@ -1,6 +1,7 @@
 import React, {useState, useEffect} from "react"
 import {getWeb3, getContracts} from "./blockchain"
 
+import {Wallet, Orders, Trades} from "./components" 
 
 
 function App() {
@@ -10,19 +11,6 @@ function App() {
     const [dex, setDex] = useState(null)
     const [coins, setCoins] = useState({})
 
-    useEffect(() => {
-        //   async function init () {
-        //       setIsLoading(true)
-        //       const web3 = await getWeb3()
-        //       const {dexContract, coinContracts} = await getContracts({web3})
-        //       setWeb3(web3)
-        //       setDex(dexContract)
-        //       setCoins(coinContracts)
-        //       setIsLoading(false)
-        //   }
-
-        //   init()
-    }, [])
 
     async function connect () {
         setIsLoading(true)
