@@ -1,8 +1,11 @@
 import React, {useState, useEffect} from "react"
-import {getWeb3, getContracts} from "./utils"
+//import {getWeb3, getContracts} from "./utils"
+import {getWeb3, getContracts} from "./blockchain"
+
 
 
 function App() {
+    const [isConnected, setIsConnected] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
     const [web3, setWeb3] = useState(null)
     const [dex, setDex] = useState(null)

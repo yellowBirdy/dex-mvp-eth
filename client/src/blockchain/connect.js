@@ -1,6 +1,7 @@
 import Web3 from "web3"
-import ERC20Abi from "./ERC20Abi.json"
-import Dex from "./contracts/Dex"
+//import ERC20Abi from "./ERC20Abi.json"
+import ERC20 from "../contracts/ERC20"
+import Dex from "../contracts/Dex"
 
 
 
@@ -47,7 +48,7 @@ export const getContracts = async ({web3}) => {
         .call()
     tokens.forEach(({ticker, tokenAddress}) => {
         coinContracts[web3.utils.hexToUtf8(ticker)] =
-            new web3.eth.Contract(ERC20Abi, tokenAddress)
+            new web3.eth.Contract(ERC20.abi, tokenAddress)
     })
 
     return {dexContract, coinContracts}
